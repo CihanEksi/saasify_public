@@ -12,10 +12,9 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, Copy, Loader2, MoreHorizontal } from "lucide-react"
+import { ArrowUpDown, Copy, Loader2, MoreHorizontal } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -25,23 +24,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import { PageHeader } from "@kit/ui/page"
-import { Plus } from "lucide-react"
 import Link from "next/link"
 import { useLink } from "@/hooks/useLink"
 import { ILink } from "@/types/LinkTypes"
 import useDebounce from "@/hooks/useDebounce"
-
-
+import LinkTableHeader from "./_components/LinkTableHeader"
+import LinkDropdownMenu from "./_components/LinkDropdownMenu"
+import LinkTable from "./_components/LinkTable"
+import LinkTablePaginationElements from "./_components/LinkTablePaginationElements"
 
 function LinkPage() {
   const { getQuery, deleteMutation } = useLink();
@@ -111,28 +102,6 @@ function LinkPage() {
 
   const columns: ColumnDef<ILink>[] = [
     {
-      id: "select",
-      header: ({ table }) => (
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
-        />
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
-    {
       accessorKey: "id",
       header: () => <div className="text-right">ID</div>,
       cell: ({ row }) => {
@@ -150,7 +119,9 @@ function LinkPage() {
       accessorKey: "status",
       header: () => <div className="text-left">Status</div>,
       cell: ({ row }) => (
-        <div className="capitalize text-left">{row.getValue("status")}</div>
+        <div className={`flex items-center ${row.getValue("status") === "active" ? "text-green-600" : "text-red-600"}`}>
+          {row.getValue("status")}
+        </div>
       ),
     },
     {
@@ -158,6 +129,7 @@ function LinkPage() {
       header: ({ column }) => <Button
         variant="ghost"
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        className="max-w-[150px] overflow-hidden text-ellipsis"
       >
         Long
         <ArrowUpDown />
@@ -165,7 +137,8 @@ function LinkPage() {
       cell: ({ row }) => {
         return <Link
           href={`${row.getValue("long")}`}
-          className="text-left font-medium text-blue-500 hover:text-blue-700"
+          className="text-left font-medium text-blue-500 hover:text-blue-700 truncate block max-w-[240px] overflow-hidden"
+          title={`${row.getValue("long")}`}
         >
           {row.getValue("long")}
         </Link>
@@ -300,138 +273,22 @@ function LinkPage() {
       <PageHeader description={'Analytics, branding, and control over every link.'} />
 
       <div className="w-full px-4">
-
         <div className="flex items-center py-4">
-
-          <div
-            className="flex justify-between items-center w-full"
-          >
-            <Input
-              placeholder="Filter by Title.."
-              value={inputKeyword}
-              onChange={(event) => setInputKeyword(event.target.value)}
-              className="max-w-sm"
-            />
-
-            <Link href={'/home/link/manage'}>
-              <Button
-                className="ml-2"
-                variant="outline"
-                size="lg"
-              >
-                <Plus /> New Link
-              </Button>
-            </Link>
-          </div>
-
-          <DropdownMenu>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
-                    >
-                      {column.id}
-                    </DropdownMenuCheckboxItem>
-                  )
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <LinkTableHeader inputKeyword={inputKeyword} setInputKeyword={setInputKeyword} />
+          <LinkDropdownMenu table={table} />
         </div>
 
         <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => {
-                    return (
-                      <TableHead key={header.id}>
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                      </TableHead>
-                    )
-                  })}
-                </TableRow>
-              ))}
-            </TableHeader>
-
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && "selected"}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center"
-                  >
-                    {isLoading ? (
-                      <div className="flex items-center justify-center">
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Loading Page ...
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center">
-                        There is no link to display.
-                      </div>
-                    )}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+          <LinkTable
+            columns={columns}
+            isLoading={isLoading}
+            table={table}
+          />
         </div>
 
-        <div className="flex items-center justify-end space-x-2 py-4">
-          <div className="flex-1 text-sm text-muted-foreground">
-            {table.getFilteredSelectedRowModel().rows.length} of{" "}
-            {table.getFilteredRowModel().rows.length} row(s) selected.
-          </div>
-          <div className="space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
+        <LinkTablePaginationElements
+          table={table}
+        />
       </div>
     </>
   )

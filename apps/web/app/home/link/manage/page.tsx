@@ -39,7 +39,7 @@ function ManageLinkPage() {
   const searchParams = useSearchParams();
   const linkId = searchParams.get('id');
   const isCreateMode = !linkId;
-  const { createMutation, updateMutation, getQuery } = useLink();
+  const { createMutation, updateMutation, getQuery,resetLinksCache } = useLink();
   const router = useRouter();
 
   const { data: linkResponse, isPending, error, refetch } = getQuery(
@@ -109,9 +109,10 @@ function ManageLinkPage() {
         onSuccess: () => {
           form.reset();
           toast.success("Link created successfully redirecting...");
+          resetLinksCache();
           setTimeout(() => {
             router.push('/home/link');
-          }, 2500);
+          }, 2000);
         },
         onError: (error: any) => {
           const errorMessage = error?.message || '';
@@ -203,6 +204,7 @@ function ManageLinkPage() {
               </FormItem>
             )}
           />
+          
           <FormField
             control={form.control}
             name="short"
@@ -263,8 +265,8 @@ function ManageLinkPage() {
           <div className="flex justify-between">
             <div>
 
-              <Button type="submit" variant="default"
-                className='w-3/5 md:w-70'
+              <Button type="submit" variant="outline"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-900 dark:hover:bg-emerald-600 w-3/5 md:w-70 "
                 disabled={createMutation.loading || updateMutation.loading}
               >
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> :
