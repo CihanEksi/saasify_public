@@ -275,7 +275,6 @@ function LinkPage() {
       <div className="w-full px-4">
         <div className="flex items-center py-4">
           <LinkTableHeader inputKeyword={inputKeyword} setInputKeyword={setInputKeyword} />
-          <LinkDropdownMenu table={table} />
         </div>
 
         <div className="rounded-md border">
