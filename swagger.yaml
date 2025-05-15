@@ -1,0 +1,347 @@
+openapi: 3.0.0
+info:
+  title: Saasify Link Management API
+  description: API documentation for the Saasify link management service
+  version: 1.0.0
+servers:
+  - url: https://saasify-web.vercel.app/
+    description: Production server
+  - url: http://localhost:3000/api
+    description: Local development
+
+paths:
+  /link:
+    post:
+      summary: Create a new link
+      description: Create a new shortened link
+      tags:
+        - Links
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LinkInput'
+            example:
+              long: "https://example.com/very-long-url-that-needs-shortening"
+              short: "myshortlink"
+              title: "Example Link"
+              status: "active"
+      responses:
+        '201':
+          description: Link created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Link created successfully"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Link'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: array
+                    items:
+                      type: object
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          
+    get:
+      summary: Get all links
+      description: Retrieve a paginated list of links for the authenticated user
+      tags:
+        - Links
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+          description: Page number for pagination
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: Number of items per page
+        - name: keyword
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Search keyword to filter links by title
+        - name: id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by specific link ID
+        - name: short
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by specific short link code
+      responses:
+        '200':
+          description: Links retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Links retrieved successfully"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Link'
+                  totalCount:
+                    type: integer
+                    example: 42
+                  page:
+                    type: integer
+                    example: 1
+                  pageSize:
+                    type: integer
+                    example: 10
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /link/{id}:
+    put:
+      summary: Update a link
+      description: Update an existing link by ID
+      tags:
+        - Links
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the link to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LinkUpdateInput'
+            example:
+              long: "https://example.com/updated-url"
+              short: "updatedshort"
+              title: "Updated Link Title"
+              status: "inactive"
+      responses:
+        '200':
+          description: Link updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Link updated successfully"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Link'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          
+    delete:
+      summary: Delete a link
+      description: Delete a link by ID
+      tags:
+        - Links
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the link to delete
+      responses:
+        '200':
+          description: Link deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Link deleted successfully"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Link'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+components:
+  schemas:
+    Link:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        long:
+          type: string
+          description: The original long URL
+        short:
+          type: string
+          description: The shortened URL path
+        title:
+          type: string
+          description: Title or description for the link
+        status:
+          type: string
+          enum: [active, inactive]
+          description: Link status
+        userid:
+          type: string
+          format: uuid
+          description: ID of the user who created the link
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+    
+    LinkInput:
+      type: object
+      required:
+        - long
+        - short
+        - title
+      properties:
+        long:
+          type: string
+          description: The original long URL
+        short:
+          type: string
+          description: The shortened URL path
+        title:
+          type: string
+          description: Title or description for the link
+        status:
+          type: string
+          enum: [active, inactive]
+          default: active
+          description: Link status (active or inactive)
+
+    LinkUpdateInput:
+      type: object
+      properties:
+        long:
+          type: string
+          description: The original long URL
+        short:
+          type: string
+          description: The shortened URL path
+        title:
+          type: string
+          description: Title or description for the link
+        status:
+          type: string
+          enum: [active, inactive]
+          description: Link status (active or inactive)
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              
+    Unauthorized:
+      description: Unauthorized access
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+      
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+    
+    ServerError:
+      description: Server error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []
